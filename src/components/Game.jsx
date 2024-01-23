@@ -189,8 +189,8 @@ export default function Game() {
   const [clicked, setClicked] = useState(false);
   const [clickedSquare, setClickedSquare] = useState(null);
   const [clickedIndex, setClickedIndex] = useState(null);
-  const whitePiecesCount = pieces.filter((s) => s.color === "white").length;
-  const blackPiecesCount = pieces.filter((s) => s.color === "black").length;
+  const whitePiecesCount = pieces.filter((p) => p.color === "white").length;
+  const blackPiecesCount = pieces.filter((p) => p.color === "black").length;
 
   const ButtonClick = () => {
     seeButtonsFunction();
@@ -213,10 +213,10 @@ export default function Game() {
     const nextIndex = (index + 1) % 8;
     if (index % 2 !== 0) {
       const prev = pieces.find(
-        (s) => s.square === square && s.index === index - 1 //trazim isti kvadrat i index manji za 1
+        (p) => p.square === square && p.index === index - 1 //trazim isti kvadrat i index manji za 1
       );
       const next = pieces.find(
-        (s) => s.square === square && s.index === nextIndex 
+        (p) => p.square === square && p.index === nextIndex 
       );
       
       if (prev && next && prev.color === color && next.color === color) {
@@ -225,7 +225,7 @@ export default function Game() {
 
       let newLine = true;
       for (let i = 0; i < 3; i++) {
-        const st = pieces.find((s) => s.square === i && s.index === index);
+        const st = pieces.find((p) => p.square === i && p.index === index);
         if (!st || st.color !== color) {
           newLine = false;
           break;
@@ -241,10 +241,10 @@ export default function Game() {
       const nextNextIndex = (index + 2) % 8;
 
       const prev = pieces.find(
-        (s) => s.square === square && s.index === prevIndex
+        (p) => p.square === square && p.index === prevIndex
       );
       const prevPrev = pieces.find(
-        (s) => s.square === square && s.index === prevPrevIndex
+        (p) => p.square === square && p.index === prevPrevIndex
       );
 
 
@@ -258,10 +258,10 @@ export default function Game() {
       }
 
       const next = pieces.find(
-        (s) => s.square === square && s.index === nextIndex
+        (p) => p.square === square && p.index === nextIndex
       );
       const nextNext = pieces.find(
-        (s) => s.square === square && s.index === nextNextIndex
+        (p) => p.square === square && p.index === nextNextIndex
       );
 
       if (
@@ -311,7 +311,7 @@ export default function Game() {
       (color === "black" && blackRemaining > 0)
     ) {
       
-      setPieces((s) => [...s, { square, index, color }]); 
+      setPieces((p) => [...p, { square, index, color }]); 
       if (color === "white") {
         setWhiteRemaining(whiteRemaining - 1);
       } else if (color === "black") {
@@ -428,7 +428,7 @@ export default function Game() {
     } else {
       // Selektuje figuru za pomeranje
       const newPiece = pieces.find(
-        (s) => s.square === square && s.index === index && s.color === pieceColor
+        (p) => p.square === square && p.index === index && p.color === pieceColor
       );
       setSelectedPiece(newPiece);
       
@@ -448,7 +448,7 @@ export default function Game() {
         const colors = [];
         for (let index = start; index <= end; index++) {
           const piece = pieces.find(
-            (s) => s.square === square && s.index === index % 8
+            (p) => p.square === square && p.index === index % 8
           );
           if (!piece) continue indexLoop;
           colors.push(piece.color);
@@ -456,9 +456,9 @@ export default function Game() {
         if (colors.length !== 3) continue; // mozda ne treba
         let lineColor;
         if (colors.every((c) => c === "white")) {
-          lineColor = "red";
+          lineColor = "blue";
         } else if (colors.every((c) => c === "black")) {
-          lineColor = "green";
+          lineColor = "orange";
         } else {
           continue;
         }
@@ -495,7 +495,7 @@ export default function Game() {
       const colors = [];
       for (let square = 0; square < 3; square++) {
         const piece = pieces.find(
-          (s) => s.square === square && s.index === index
+          (p) => p.square === square && p.index === index
         );
         if (!piece) continue outerLoop;
         colors.push(piece.color);
@@ -504,9 +504,9 @@ export default function Game() {
       if (colors.length !== 3) continue;
       let lineColor;
       if (colors.every((c) => c === "white")) {
-        lineColor = "red";
+        lineColor = "blue";
       } else if (colors.every((c) => c === "black")) {
-        lineColor = "green";
+        lineColor = "orange";
       } else {
         continue;
       }
