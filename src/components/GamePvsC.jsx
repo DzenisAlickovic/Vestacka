@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
-import { SlActionUndo } from "react-icons/sl";
 import axios from "axios";
 import "./Game.css";
 
@@ -200,7 +199,14 @@ export default function Game() {
   function toggleColor() {
     setColor((c) => (c === "white" ? "black" : "white"));
   }
-
+  useEffect(() => {
+    if (clicked && checkLine(clickedSquare, clickedIndex)) {
+      setRemovePieceMode(true);
+      setClicked(false);
+    } else if (clicked) {
+      toggleColor();
+    }
+  }, [pieces, clicked]);
   function checkLine(square, index) {
     const nextIndex = (index + 1) % 8;
     if (index % 2 !== 0) {
@@ -284,14 +290,6 @@ export default function Game() {
     blackPiecesCount,
   ]);
 
-  useEffect(() => {
-    if (clicked && checkLine(clickedSquare, clickedIndex)) {
-      setRemovePieceMode(true);
-      setClicked(false);
-    } else if (clicked) {
-      toggleColor();
-    }
-  }, [pieces, clicked]);
 
   function onCircleClick(square, index) {
     if (!isGameActive) return;
@@ -306,7 +304,7 @@ export default function Game() {
       (color === "white" && whiteRemaining > 0) ||
       (color === "black" && blackRemaining > 0)
     ) {
-      // putting new pieces
+      
       setPieces((s) => [...s, { square, index, color }]);
       if (color === "white") {
         setWhiteRemaining(whiteRemaining - 1);
@@ -315,7 +313,7 @@ export default function Game() {
       }
       clicked = true;
     } else {
-      // moving pieces
+      
       if (
         selectedPiece &&
         (jumpMode ||
@@ -364,7 +362,6 @@ export default function Game() {
       return true;
     }
 
-    // indeksi 1, 3, 5, i 7 su vertikalne linije
     if (index % 2 === 1) {
       const isVerticalLine =
         pieces.filter((p) => p.index === index && p.color === color).length ===
@@ -376,62 +373,67 @@ export default function Game() {
     return false;
   }
 
+  function canRemovePiece(clickedPiece, pieces, currentColor) {
+    const opponentPieces = pieces.filter(p => p.color !== currentColor);
+    const inLineOpponentPieces = opponentPieces.filter(p => isPiecePartOfLine(p, pieces));
+  
+    if (inLineOpponentPieces.length === opponentPieces.length || !isPiecePartOfLine(clickedPiece, pieces)) {
+      return true;
+    }
+  
+    return false;
+  }
+  
   function onPieceClick(square, index, pieceColor) {
     if (!isGameActive) return;
+  
+    // Logika za uklanjanje protivničke figure u removePieceMode
     if (removePieceMode) {
-      if (color === pieceColor) return;
-      const clickedPiece = { square, index, color: pieceColor };
-      const pieceIsInLine = isPiecePartOfLine(clickedPiece, pieces);
-      const otherPiecesNotInLine = pieces.filter(
-        (p) => !isPiecePartOfLine(p, pieces)
-      );
-
-      if (pieceIsInLine && otherPiecesNotInLine.length > 0) {
-        return;
+      // Dozvoljava uklanjanje samo ako je boja protivnika
+      if (color !== pieceColor) {
+        const clickedPiece = { square, index, color: pieceColor };
+        if (canRemovePiece(clickedPiece, pieces,color)) {
+          setPieces(pieces.filter((p) => p.square !== square || p.index !== index));
+          setRemovePieceMode(false);
+          toggleColor();
+          return;
+        }
       }
-
-      setPieces(
-        pieces.filter((s) => !(s.square === square && s.index === index))
-      );
-      //setStones(stones.filter((s) => s !== clickedStone));
-
-      setRemovePieceMode(false);
-
-      // 4 because of setStones taking effect only after next render
-      if (
-        whiteRemaining === 0 &&
-        blackRemaining === 0 &&
-        ((color === "white" && blackPiecesCount === 4) ||
-          (color === "black" && whitePiecesCount === 4))
-      ) {
-        setJumpMode(true);
-      }
-      toggleColor();
+      // Ako je figura iste boje kao igrač, ne dozvoljava uklanjanje
       return;
     }
-
+  
+    // Blokira selekciju ako nije na redu
     if (color !== pieceColor) return;
+  
+    // Ako igrač još uvek ima figure koje može postaviti, blokira pomeranje
     if (
       (pieceColor === "white" && whiteRemaining > 0) ||
       (pieceColor === "black" && blackRemaining > 0)
-    )
+    ) {
       return;
-    if (
-      selectedPiece &&
+    }
+  
+    // Logika za selekciju i pomeranje figura
+    if (selectedPiece &&
       selectedPiece.square === square &&
       selectedPiece.index === index &&
-      selectedPiece.color === pieceColor
-    ) {
+      selectedPiece.color === pieceColor) {
+      // Deselektuje figuru ako je već selektovana
       setSelectedPiece(null);
     } else {
+      // Selektuje figuru za pomeranje
       const newPiece = pieces.find(
-        (s) =>
-          s.square === square && s.index === index && s.color === pieceColor
+        (s) => s.square === square && s.index === index && s.color === pieceColor
       );
       setSelectedPiece(newPiece);
+      
+      // Proverava da li igrač ima samo tri figure i postavlja jump mode ako je to slučaj
+      const playerHasThreePieces = pieces.filter(p => p.color === pieceColor).length === 3;
+      setJumpMode(playerHasThreePieces);
     }
   }
-
+  
   function generateConnectedLines() {
     const lines = [];
 
@@ -621,18 +623,23 @@ export default function Game() {
         Array(3)
           .fill(null)
           .map((_) => Array(3).fill(0))
-      );
+      ); //matrica puna nula
 
     let white_count = 0;
     let black_count = 0;
     for (const piece of pieces) {
       const { color, square, index } = piece;
       const player = color === "white" ? 1 : -1;
-      const x = square;
+      const x = square; //kvadrat
       const [y, z] = indexToBackendIndex(index);
 
       matrix[x][y][z] = player;
-
+      console.log(matrix[x]);
+      console.log(matrix[y]);
+      console.log(matrix[z]);
+      console.log(matrix);
+      console.log(player);
+      
       if (player === 1) {
         white_count++;
       } else if (player === -1) {
@@ -694,7 +701,7 @@ export default function Game() {
       try {
         if (color == "black") {
           const response = await axios.post(
-            "http://localhost:8000/game/move/",
+            "http://localhost:8000/game/9_man_moris/",
             gameData
           );
           const newMove = response.data;
@@ -706,7 +713,9 @@ export default function Game() {
       }
     }
     const intervalId = setInterval(() => {
-      getAiMove();
+      if(color == "black"){
+        getAiMove();
+      }
     }, 1500);
 
     return () => clearInterval(intervalId);
@@ -715,11 +724,8 @@ export default function Game() {
   return (
     <>
       <div id="game-container">
-        <div className="wr">
+        <div className="whiteCircle">
           <div className="white"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {whiteRemaining}
-          </h3>
         </div>
         <svg viewBox="0 0 100 100">
           <line className="board-line" x1={50} y1={10} x2={50} y2={30} />
@@ -730,31 +736,40 @@ export default function Game() {
           <Board padding={20} onCircleClick={onCircleClick} />
           <Board padding={30} onCircleClick={onCircleClick} />
           {...connectedLines}
-          {pieces.map(({ square, index, color }) => (
-            <Piece
-              key={`${square}-${index}-${color}`}
-              square={square}
-              index={index}
-              color={color}
-              selected={
-                selectedPiece &&
-                selectedPiece.square === square &&
-                selectedPiece.index === index &&
-                selectedPiece.color === color
-              }
-              onPieceClick={onPieceClick}
-            />
-          ))}
-        </svg>
+          {pieces.map((piece, idx) => (
+    <Piece
+      key={`piece-${idx}`} // idx is the array index, ensuring a unique key
+      square={piece.square}
+      index={piece.index}
+      color={piece.color}
+      selected={
+        selectedPiece &&
+        selectedPiece.square === piece.square &&
+        selectedPiece.index === piece.index &&
+        selectedPiece.color === piece.color
+      }
+      onPieceClick={onPieceClick}
+    />
+  ))}
+</svg>
         <div>
           <div className="black"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {blackRemaining}
-          </h3>
+        </div>
+        <div className="piece-counters">
+          <div className="counter">
+            <div className="piece white"></div>
+            <span className="piece-number white">{whiteRemaining}</span>
+            <span className="piece-count white">{whitePiecesCount}</span> 
+          </div>
+
+          <div className="counter">
+            <div className="piece black"></div>
+            <span className="piece-number black">{blackRemaining}</span>
+            <span className="piece-count black">{blackPiecesCount}</span> 
+          </div>
         </div>
         <Link to="/">
           <button className="homeScreen" onClick={ButtonClick}>
-            <SlActionUndo className="qw" />
             Home screen
           </button>
         </Link>

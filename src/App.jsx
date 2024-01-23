@@ -13,9 +13,7 @@ import {
 import { MyContext } from "./context/MyContext";
 
 function App() {
-  const { seeButtons, seeButtonsFunction, difficulty, gameDifficultyFunction } =
-    useContext(MyContext);
-
+  const { seeButtons, seeButtonsFunction, difficulty, gameDifficultyFunction } = useContext(MyContext);
   const ButtonClick = (b) => {
     console.log(difficulty);
     seeButtonsFunction();
@@ -38,7 +36,6 @@ function App() {
             <h1>PyMlin - 9 Man Morris</h1>
           </div>
           <div className="buttonsGroup">
-            <h2>Choose mode</h2>
             <Link to="/game">
               <button className="dugmici" onClick={ButtonClick}>
                 Player vs Player
@@ -54,6 +51,7 @@ function App() {
                 Computer vs Computer
               </button>
             </Link>
+            <h2>Choose mode</h2>
             <select onChange={difficultyChosing}>
               <option value={"easy"}>Easy</option>
               <option value={"medium"}>Medium</option>

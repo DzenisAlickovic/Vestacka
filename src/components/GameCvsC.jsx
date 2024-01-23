@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
-import { SlActionUndo } from "react-icons/sl";
 import axios from "axios";
 import "./Game.css";
 
@@ -42,7 +41,7 @@ function areConnected(square1, index1, square2, index2) {
 }
 
 function Board({ padding, onCircleClick }) {
-  //tabla
+  
   const startPadding = padding;
   const endPadding = 100 - startPadding;
   const square = padding / 10 - 1;
@@ -696,7 +695,7 @@ export default function Game() {
       const gameData = toBackendRepr();
       try {
         const response = await axios.post(
-          "http://localhost:8000/game/move/",
+          "http://localhost:8000/game/9_man_moris/",
           gameData
         );
         const newMove = response.data;
@@ -716,12 +715,8 @@ export default function Game() {
   return (
     <>
       <div id="game-container">
-        <div className="wr">
+        <div className="whiteCircle">
           <div className="white"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {whiteRemaining}
-          </h3>
-          {/* <h3>White count: {whiteStonesCount}</h3> */}
         </div>
         <svg viewBox="0 0 100 100">
           <line className="board-line" x1={50} y1={10} x2={50} y2={30} />
@@ -732,33 +727,42 @@ export default function Game() {
           <Board padding={20} onCircleClick={onCircleClick} />
           <Board padding={30} onCircleClick={onCircleClick} />
           {...connectedLines}
-          {pieces.map(({ square, index, color }) => (
-            <Piece
-              key={`${square}-${index}-${color}`}
-              square={square}
-              index={index}
-              color={color}
-              selected={
-                selectedPiece &&
-                selectedPiece.square === square &&
-                selectedPiece.index === index &&
-                selectedPiece.color === color
-              }
-              onPieceClick={onPieceClick}
-            />
-          ))}
-        </svg>
+          {pieces.map((piece, idx) => (
+    <Piece
+      key={`piece-${idx}`} // idx is the array index, ensuring a unique key
+      square={piece.square}
+      index={piece.index}
+      color={piece.color}
+      selected={
+        selectedPiece &&
+        selectedPiece.square === piece.square &&
+        selectedPiece.index === piece.index &&
+        selectedPiece.color === piece.color
+      }
+      onPieceClick={onPieceClick}
+    />
+  ))}
+</svg>
+        
         <div>
           <div className="black"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {blackRemaining}
-          </h3>
-          {/* <h3>Black count: {blackPiecesCount}</h3> */}
-          {/* <h3>Jump mode: {JSON.stringify(jumpMode)}</h3> */}
+        </div>
+        <div className="piece-counters">
+          <div className="counter">
+            <div className="piece white"></div>
+            <span className="piece-number white">{whiteRemaining}</span>
+            <span className="piece-count white">{whitePiecesCount}</span> 
+          </div>
+
+          {/* Counter for black pieces */}
+          <div className="counter">
+            <div className="piece black"></div>
+            <span className="piece-number black">{blackRemaining}</span>
+            <span className="piece-count black">{blackPiecesCount}</span> 
+          </div>
         </div>
         <Link to="/">
           <button className="homeScreen" onClick={ButtonClick}>
-            <SlActionUndo className="qw" />
             Home screen
           </button>
         </Link>

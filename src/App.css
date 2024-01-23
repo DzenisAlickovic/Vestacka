@@ -1,75 +1,114 @@
+:root {
+  color: #ffffff;
+}
 .backgroundImage {
   position: fixed;
   top: 0px;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url(assets/slika.png);
+  background-image: url(assets/mica.png);
   background-size: cover;
   z-index: -1;
 }
+
 .buttonsContainer {
-  position: absolute;
+  position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  width:100%;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
+ 
 }
 
 .buttonsGroup {
-  position: absolute;
-  top: 50%;
+  position: relative;
+  color: #FFFFFF;
+  top: 120px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 250px;
-  border: 10px dotted red;
+  margin-top: 5%;
   width: 80%;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
 }
-
-.buttonsContainer h1,
+.buttonsContainer h1 {
+  color: #58c1e4;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  font-size: 3em;
+  margin: 20px 0; /* Add space around the header */
+  position: relative; /* Remove absolute positioning here */
+  text-align: center;
+  z-index: 11; /* Ensure it's above other content */
+}
+.buttonsContainer 
 h2 {
   color: rgb(88, 193, 228);
-  margin-top: 20px;
-  font-size: 3.2em;
+  margin-top: 0;
+  font-size: 3em;
+  
   line-height: 1.1;
 }
 
 .buttonsGroup h2 {
-  color: white;
-  background-color: brown;
-  border-radius: 5px;
-}
-.buttonsGroup select {
-  width: 150px;
-  margin-top: 15px;
-  margin-bottom: 15px;
-  height: 40px;
+  color: #ffffff; /* White color for better visibility */
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7); /* Text shadow for readability */
+  font-size: 2em; 
+  margin: 10px 0; 
 }
 
+  .buttonsGroup select {
+    width: 220px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.8); 
+    border: 1px solid #58c1e4;
+    border-radius: 8px; 
+    padding: 5px 10px; 
+    margin:10px 0;
+    cursor: pointer; 
+    font-size: 1em; 
+    font-weight: 500; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    appearance: none; 
+    -webkit-appearance: none; 
+    text-align: center; 
+  }
+  .buttonsGroup select::-ms-expand {
+    display: none; /* Hide the default arrow in IE */
+  }
+  .buttonsGroup::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 35px; 
+    pointer-events: none;
+    border-style: solid;
+    border-width: 8px 5px 0 5px;
+    border-color: #58c1e4 transparent transparent transparent; /* Arrow color to match the theme */
+    height: 0;
+    width: 0;
+  }
+  
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.8em 1.2em;
+  border: 1px solid #58c1e4;
+  padding: 12px 24px;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  transition: border-color 0.25s;
-  width: 250px;
-  margin-top: 10px;
+  transition: all 0.25s;
+  width: 220px;
+  margin: 10px 0;
 }
 button:hover {
-  border-color: #646cff;
-}
+  background-color: #58c1e4; 
+  background-color: #e9e9e9;
+} 
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -85,5 +124,6 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
   }
 }

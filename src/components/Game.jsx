@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
-import { SlActionUndo } from "react-icons/sl";
 import "./Game.css";
 
 const connections = {
@@ -170,20 +169,15 @@ function Piece({ square, index, color, selected, onPieceClick }) {
       cy={y}
       r={3}
       fill={color}
-      stroke={(selected && "green") || "transparent"}
+      stroke={(selected && "lightblue") || "transparent"}
       strokeWidth={0.5}
       onClick={() => onPieceClick(square, index, color)}
     />
   );
 }
 
-export default function Game() {
+export default function Game() {  
   const { seeButtonsFunction } = useContext(MyContext);
-
-  const ButtonClick = () => {
-    seeButtonsFunction();
-  };
-
   const [pieces, setPieces] = useState([]);
   const [whiteRemaining, setWhiteRemaining] = useState(9);
   const [blackRemaining, setBlackRemaining] = useState(9);
@@ -198,6 +192,9 @@ export default function Game() {
   const whitePiecesCount = pieces.filter((s) => s.color === "white").length;
   const blackPiecesCount = pieces.filter((s) => s.color === "black").length;
 
+  const ButtonClick = () => {
+    seeButtonsFunction();
+  };
   function toggleColor() {
     setColor((c) => (c === "white" ? "black" : "white"));
   }
@@ -205,8 +202,8 @@ export default function Game() {
   useEffect(() => {
     if (clicked && checkLine(clickedSquare, clickedIndex)) {
       console.log("Clicked: " + clicked);
-      setRemovePieceMode(true); //palenje moda za uklanjanje
-      setClicked(false); //klik na crne kruzice na false
+      setRemovePieceMode(true); 
+      setClicked(false); 
     } else if (clicked) {
       toggleColor();
     }
@@ -215,16 +212,15 @@ export default function Game() {
   function checkLine(square, index) {
     const nextIndex = (index + 1) % 8;
     if (index % 2 !== 0) {
-      // centranli
       const prev = pieces.find(
         (s) => s.square === square && s.index === index - 1 //trazim isti kvadrat i index manji za 1
       );
       const next = pieces.find(
-        (s) => s.square === square && s.index === nextIndex //trazim isti kvadrat i index manji za 1
+        (s) => s.square === square && s.index === nextIndex 
       );
-      //=========================================npr ako imam na indexu 0 i 2 figuru i ako stavim figuru na 1-om indexu, napravicu liniju
+      
       if (prev && next && prev.color === color && next.color === color) {
-        return true; //nadjena linija
+        return true; 
       }
 
       let newLine = true;
@@ -251,7 +247,6 @@ export default function Game() {
         (s) => s.square === square && s.index === prevPrevIndex
       );
 
-      // TODO: check what happens if two lines are created
 
       if (
         prev &&
@@ -291,7 +286,7 @@ export default function Game() {
           `Game Over! ${winner[0].toUpperCase() + winner.slice(1)} has won.`
         );
         setIsGameActive(false);
-        // Ovde dodajte logiku za onemogućavanje daljih poteza u igri
+        
       }
     }
   }, [
@@ -305,7 +300,7 @@ export default function Game() {
   function onCircleClick(square, index) {
     if (!isGameActive) return;
     console.log("circle clicked", square, index);
-    if (removePieceMode) return; //ako je upaljen tj. true => vrati, znaci da ne mogu da postavim novu figuru
+    if (removePieceMode) return; 
 
     setClickedSquare(square);
     setClickedIndex(index);
@@ -315,8 +310,8 @@ export default function Game() {
       (color === "white" && whiteRemaining > 0) ||
       (color === "black" && blackRemaining > 0)
     ) {
-      // putting new pieces
-      setPieces((s) => [...s, { square, index, color }]); //postavljanje figure
+      
+      setPieces((s) => [...s, { square, index, color }]); 
       if (color === "white") {
         setWhiteRemaining(whiteRemaining - 1);
       } else if (color === "black") {
@@ -324,9 +319,9 @@ export default function Game() {
       }
       clicked = true;
     } else {
-      // moving pieces
+      
       if (
-        selectedPiece && //ako je selektovana figura i ako je jump mode ukljucen ili je connected onda ....
+        selectedPiece &&
         (jumpMode ||
           areConnected(
             selectedPiece.square,
@@ -372,8 +367,6 @@ export default function Game() {
     if (isHorizontalLine) {
       return true;
     }
-
-    // indeksi 1, 3, 5, i 7 su vertikalne linije
     if (index % 2 === 1) {
       const isVerticalLine =
         pieces.filter((p) => p.index === index && p.color === color).length ===
@@ -384,69 +377,67 @@ export default function Game() {
     }
     return false;
   }
-
+  function canRemovePiece(clickedPiece, pieces, currentColor) {
+    const opponentPieces = pieces.filter(p => p.color !== currentColor);
+    const inLineOpponentPieces = opponentPieces.filter(p => isPiecePartOfLine(p, pieces));
+  
+    if (inLineOpponentPieces.length === opponentPieces.length || !isPiecePartOfLine(clickedPiece, pieces)) {
+      return true;
+    }
+  
+    return false;
+  }
+  
   function onPieceClick(square, index, pieceColor) {
     if (!isGameActive) return;
+  
+    // Logika za uklanjanje protivničke figure u removePieceMode
     if (removePieceMode) {
-      //ako je true onda moram da uklonim figuru
-      if (color === pieceColor) return; //ako je bela == bela return => ako sam beli nmg belu da uklonim
-
-      const clickedPiece = { square, index, color: pieceColor };
-      const pieceIsInLine = isPiecePartOfLine(clickedPiece, pieces);
-      const otherPiecesNotInLine = pieces.filter(
-        (p) => !isPiecePartOfLine(p, pieces)
-      );
-
-      console.log("Piece in line:? " + pieceIsInLine);
-
-      if (pieceIsInLine && otherPiecesNotInLine.length > 0) {
-        return; // Ne dozvoljava uklanjanje figure ako je ona deo linije i postoje druge protivničke figure koje nisu u linijama
+      // Dozvoljava uklanjanje samo ako je boja protivnika
+      if (color !== pieceColor) {
+        const clickedPiece = { square, index, color: pieceColor };
+        if (canRemovePiece(clickedPiece, pieces,color)) {
+          setPieces(pieces.filter((p) => p.square !== square || p.index !== index));
+          setRemovePieceMode(false);
+          toggleColor();
+          return;
+        }
       }
-
-      setPieces(
-        pieces.filter((p) => !(p.square === square && p.index === index))
-      );
-
-      setRemovePieceMode(false);
-
-      // 4 because of setStones taking effect only after next render
-      if (
-        whiteRemaining === 0 &&
-        blackRemaining === 0 &&
-        ((color === "white" && blackPiecesCount === 4) ||
-          (color === "black" && whitePiecesCount === 4))
-      ) {
-        setJumpMode(true); //da moze da skace figura ako ih je ostalo 3
-      }
-
-      toggleColor();
+      // Ako je figura iste boje kao igrač, ne dozvoljava uklanjanje
       return;
     }
-    if (color !== pieceColor) return; //bela razlicito od crna i obrnuto
+  
+    // Blokira selekciju ako nije na redu
+    if (color !== pieceColor) return;
+  
+    // Ako igrač još uvek ima figure koje može postaviti, blokira pomeranje
     if (
       (pieceColor === "white" && whiteRemaining > 0) ||
       (pieceColor === "black" && blackRemaining > 0)
-    )
-      //================================================ => ako ima remaining nemoguce je pomeranje
+    ) {
       return;
-    if (
-      //selekcija figure, ako je selektamo ide u else ako je opet ide u if
-      selectedPiece &&
+    }
+  
+    // Logika za selekciju i pomeranje figura
+    if (selectedPiece &&
       selectedPiece.square === square &&
       selectedPiece.index === index &&
-      selectedPiece.color === pieceColor
-    ) {
+      selectedPiece.color === pieceColor) {
+      // Deselektuje figuru ako je već selektovana
       setSelectedPiece(null);
     } else {
+      // Selektuje figuru za pomeranje
       const newPiece = pieces.find(
-        (s) =>
-          s.square === square && s.index === index && s.color === pieceColor
+        (s) => s.square === square && s.index === index && s.color === pieceColor
       );
-      console.log("New Piece: ", newPiece);
       setSelectedPiece(newPiece);
+      
+      // Proverava da li igrač ima samo tri figure i postavlja jump mode ako je to slučaj
+      const playerHasThreePieces = pieces.filter(p => p.color === pieceColor).length === 3;
+      setJumpMode(playerHasThreePieces);
     }
   }
-
+  
   function generateConnectedLines() {
     const lines = [];
 
@@ -580,11 +571,8 @@ export default function Game() {
   return (
     <>
       <div id="game-container">
-        <div className="wr">
+        <div className="whiteCircle">
           <div className="white"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {whiteRemaining}
-          </h3>
         </div>
         <svg viewBox="0 0 100 100">
           <line className="board-line" x1={50} y1={10} x2={50} y2={30} />
@@ -613,13 +601,23 @@ export default function Game() {
         </svg>
         <div>
           <div className="black"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {blackRemaining}
-          </h3>
+        </div>
+        <div className="piece-counters">
+          <div className="counter">
+            <div className="piece white"></div>
+            <span className="piece-number white">{whiteRemaining}</span>
+            <span className="piece-count white">{whitePiecesCount}</span> 
+          </div>
+
+          {/* Counter for black pieces */}
+          <div className="counter">
+            <div className="piece black"></div>
+            <span className="piece-number black">{blackRemaining}</span>
+            <span className="piece-count black">{blackPiecesCount}</span> 
+          </div>
         </div>
         <Link to="/">
           <button className="homeScreen" onClick={ButtonClick}>
-            <SlActionUndo className="qw" />
             Home screen
           </button>
         </Link>

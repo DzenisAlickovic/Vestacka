@@ -1,59 +1,116 @@
 #game-container {
-    display: flex;
-    gap: 20px;
-    width: 160%;
-    justify-content: space-evenly;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Use 100% of the viewport height */
+  width: 100vw; /* Use 100% of the viewport width */
+  overflow: hidden;
 }
 
 svg {
-    height: 550px;
-    background-color: rgb(242, 242, 162);
-    width: 40%;
-    border: 15px solid gray;
+  max-height: 70vh;
+  background-color: rgb(36, 69, 117);
+  width: auto;
+  border: 5px solid rgb(8, 11, 105);
 }
-
+piece-count {
+  display: inline-block;
+  margin-left: 10px; /* Adjust spacing between remaining count and piece count */
+  color: #fff; /* Adjust color to match design */
+  font-size: 20px; /* Adjust font size to match design */
+  font-weight: bold;
+}
 .board-line {
-    stroke: black;
-    stroke-width: 0.5;
+  stroke: black;
+  stroke-width: 0.5;
 }
 
 .board-circle:hover {
-    fill: red;
-    cursor: pointer;
+  fill: #58c1e4;
+  cursor: pointer;
 }
-.turn{
-    width: 160%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.turn h3{
-    background-color: yellowgreen;
-    width: 200px;
-    text-align: center;
 
+.homeScreen {
+  position: absolute;
+  bottom: 10px; /* Move to the bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 100; /* Ensure it's above other elements */
 }
-.homeScreen{
-    width: 170px;
-    margin-left: 90%;
-    text-align: center;
+
+/* Adjustments for 3D effect and positioning of counters */
+.piece-counters {
+  position: fixed; /* Change to fixed positioning */
+  top: 50%; /* Center vertically in the viewport */
+  left: 10%; /* Adjust to your liking to position to the left of the board */
+  transform: translateY(-50%); /* Center vertically */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Space between counters */
 }
-.wr{
-    margin-left: 20%;
+
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column; /* Stack the number below the piece */
+  gap: 10px; /* Space between the piece and the number */
 }
-.qw{
-    width: 20px;
-    height: 20px;
-    border: none;
-    background-color: #1a1a1a;
-    padding-right: 3px;
+
+.piece.white,
+.piece.black {
+  width: 50px; /* Adjust size to look more like Go pieces */
+  height: 25px; /* Adjust thickness to look more like Go pieces */
+  border-radius: 50%; /* Circular shape */
+  border: 1px solid #ccc; /* Light grey border */
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3), /* Outer shadow for depth */
+    inset 0 2px 4px rgba(255, 255, 255, 0.7), /* Inner top light for 3D effect */
+    inset 0 -2px 2px rgba(0, 0, 0, 0.2); /* Inner bottom shadow for 3D effect */
 }
-.white, .black{
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: white;
+
+/* Adjustments for the white pieces */
+.piece.white {
+  background: linear-gradient(to bottom, #fff 0%, #f0f0f0 100%);
 }
-.black{
-    background-color: black;
+
+/* Adjustments for the black pieces */
+.piece.black {
+  border: 1px solid #444;
+  background: linear-gradient(to bottom, #4d4d4d 0%, #1a1a1a 100%);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.5), /* Outer shadow for depth */
+    inset 0 4px 4px rgba(255, 255, 255, 0.1), /* Inner top light for subtle highlight */
+    inset 0 -4px 4px rgba(0, 0, 0, 0.5); /* Inner bottom shadow for 3D effect */
+}
+
+/* Additional styles if needed for text on counters */
+.piece-number.white,
+.piece-number.black {
+  color: #fff; /* White text for better visibility */
+  font-size: 20px; /* Adjust the size as needed */
+  font-weight: bold;
+}
+
+.turn {
+  position: absolute;
+  top: 10px; /* Move to the top */
+  right: 10px; /* Move to the right */
+  background-color: #204060; /* Adjust to a blue tone */
+  color: #ffffff; /* White text */
+  padding: 5px;
+  border-radius: 10px;
+  z-index: 100; /* Ensure it's above other elements */
+}
+
+.turn h3 {
+  color: #ffffff; /* Ensure text is readable */
+  font-weight: bold;
+  width: 180px;
+  margin: 0px;
+  text-align: center;
+  padding: 5px;
 }
