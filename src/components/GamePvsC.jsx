@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
+import { SlActionUndo } from "react-icons/sl";
 import axios from "axios";
 import "./Game.css";
 
@@ -193,28 +194,21 @@ export default function Game() {
   const [clicked, setClicked] = useState(false);
   const [clickedSquare, setClickedSquare] = useState(null);
   const [clickedIndex, setClickedIndex] = useState(null);
-  const whitePiecesCount = pieces.filter((p) => p.color === "white").length;
-  const blackPiecesCount = pieces.filter((p) => p.color === "black").length;
+  const whitePiecesCount = pieces.filter((s) => s.color === "white").length;
+  const blackPiecesCount = pieces.filter((s) => s.color === "black").length;
 
   function toggleColor() {
     setColor((c) => (c === "white" ? "black" : "white"));
   }
-  useEffect(() => {
-    if (clicked && checkLine(clickedSquare, clickedIndex)) {
-      setRemovePieceMode(true);
-      setClicked(false);
-    } else if (clicked) {
-      toggleColor();
-    }
-  }, [pieces, clicked]);
+
   function checkLine(square, index) {
     const nextIndex = (index + 1) % 8;
     if (index % 2 !== 0) {
       const prev = pieces.find(
-        (p) => p.square === square && p.index === index - 1
+        (s) => s.square === square && s.index === index - 1
       );
       const next = pieces.find(
-        (p) => p.square === square && p.index === nextIndex
+        (s) => s.square === square && s.index === nextIndex
       );
       if (prev && next && prev.color === color && next.color === color) {
         return true;
@@ -222,7 +216,7 @@ export default function Game() {
 
       let newLine = true;
       for (let i = 0; i < 3; i++) {
-        const st = pieces.find((p) => p.square === i && p.index === index);
+        const st = pieces.find((s) => s.square === i && s.index === index);
         if (!st || st.color !== color) {
           newLine = false;
           break;
@@ -238,10 +232,10 @@ export default function Game() {
       const nextNextIndex = (index + 2) % 8;
 
       const prev = pieces.find(
-        (p) => p.square === square && p.index === prevIndex
+        (s) => s.square === square && s.index === prevIndex
       );
       const prevPrev = pieces.find(
-        (p) => p.square === square && p.index === prevPrevIndex
+        (s) => s.square === square && s.index === prevPrevIndex
       );
       if (
         prev &&
@@ -253,10 +247,10 @@ export default function Game() {
       }
 
       const next = pieces.find(
-        (p) => p.square === square && p.index === nextIndex
+        (s) => s.square === square && s.index === nextIndex
       );
       const nextNext = pieces.find(
-        (p) => p.square === square && p.index === nextNextIndex
+        (s) => s.square === square && s.index === nextNextIndex
       );
 
       if (
@@ -290,6 +284,14 @@ export default function Game() {
     blackPiecesCount,
   ]);
 
+  useEffect(() => {
+    if (clicked && checkLine(clickedSquare, clickedIndex)) {
+      setRemovePieceMode(true);
+      setClicked(false);
+    } else if (clicked) {
+      toggleColor();
+    }
+  }, [pieces, clicked]);
 
   function onCircleClick(square, index) {
     if (!isGameActive) return;
@@ -304,7 +306,7 @@ export default function Game() {
       (color === "white" && whiteRemaining > 0) ||
       (color === "black" && blackRemaining > 0)
     ) {
-      
+      // Postavljanje novih figura
       setPieces((p) => [...p, { square, index, color }]);
       if (color === "white") {
         setWhiteRemaining(whiteRemaining - 1);
@@ -313,7 +315,7 @@ export default function Game() {
       }
       clicked = true;
     } else {
-      
+      // Pomeranje figura
       if (
         selectedPiece &&
         (jumpMode ||
@@ -339,7 +341,8 @@ export default function Game() {
     }
 
     setClicked(clicked);
-  }
+    updateJumpMode(); 
+}
 
   function isPiecePartOfLine(clickedPiece, pieces) {
     const { square, index, color } = clickedPiece;
@@ -362,6 +365,7 @@ export default function Game() {
       return true;
     }
 
+    // indeksi 1, 3, 5, i 7 su vertikalne linije
     if (index % 2 === 1) {
       const isVerticalLine =
         pieces.filter((p) => p.index === index && p.color === color).length ===
@@ -372,68 +376,57 @@ export default function Game() {
     }
     return false;
   }
-
-  function canRemovePiece(clickedPiece, pieces, currentColor) {
-    const opponentPieces = pieces.filter(p => p.color !== currentColor);
-    const inLineOpponentPieces = opponentPieces.filter(p => isPiecePartOfLine(p, pieces));
+  function updateJumpMode() {
+    // Provera da li su sve figure postavljene
+    const allPiecesPlaced = whiteRemaining === 0 && blackRemaining === 0;
   
-    if (inLineOpponentPieces.length === opponentPieces.length || !isPiecePartOfLine(clickedPiece, pieces)) {
-      return true;
+    if (allPiecesPlaced) {
+      if (color === "white" && whitePiecesCount <= 3) {
+        setJumpMode(true);
+      } else if (color === "black" && blackPiecesCount <= 3) {
+        setJumpMode(true);
+      } else {
+        setJumpMode(false);
+      }
+    } else {
+      // Ako nisu sve figure postavljene, režim skakanja ostaje isključen
+      setJumpMode(false);
     }
-  
-    return false;
   }
   
   function onPieceClick(square, index, pieceColor) {
     if (!isGameActive) return;
-  
-    // Logika za uklanjanje protivničke figure u removePieceMode
+    
     if (removePieceMode) {
-      // Dozvoljava uklanjanje samo ako je boja protivnika
-      if (color !== pieceColor) {
+        if (color === pieceColor) return;
+        
         const clickedPiece = { square, index, color: pieceColor };
-        if (canRemovePiece(clickedPiece, pieces,color)) {
-          setPieces(pieces.filter((p) => p.square !== square || p.index !== index));
-          setRemovePieceMode(false);
-          toggleColor();
-          return;
+        const pieceIsInLine = isPiecePartOfLine(clickedPiece, pieces);
+        const otherPiecesNotInLine = pieces.filter((p) => !isPiecePartOfLine(p, pieces));
+
+        if (pieceIsInLine && otherPiecesNotInLine.length > 0) {
+            return;
         }
-      }
-      // Ako je figura iste boje kao igrač, ne dozvoljava uklanjanje
-      return;
+
+        setPieces(pieces.filter((s) => !(s.square === square && s.index === index)));
+        setRemovePieceMode(false);
+        updateJumpMode();
+        toggleColor();
+        return;
     }
-  
-    // Blokira selekciju ako nije na redu
+
+    // Ovaj deo koda treba da bude izvan removePieceMode bloka
     if (color !== pieceColor) return;
-  
-    // Ako igrač još uvek ima figure koje može postaviti, blokira pomeranje
-    if (
-      (pieceColor === "white" && whiteRemaining > 0) ||
-      (pieceColor === "black" && blackRemaining > 0)
-    ) {
-      return;
-    }
-  
-    // Logika za selekciju i pomeranje figura
-    if (selectedPiece &&
-      selectedPiece.square === square &&
-      selectedPiece.index === index &&
-      selectedPiece.color === pieceColor) {
-      // Deselektuje figuru ako je već selektovana
-      setSelectedPiece(null);
+    if ((pieceColor === "white" && whiteRemaining > 0) || (pieceColor === "black" && blackRemaining > 0)) return;
+    
+    if (selectedPiece && selectedPiece.square === square && selectedPiece.index === index && selectedPiece.color === pieceColor) {
+        setSelectedPiece(null);
     } else {
-      // Selektuje figuru za pomeranje
-      const newPiece = pieces.find(
-        (p) => p.square === square && p.index === index && p.color === pieceColor
-      );
-      setSelectedPiece(newPiece);
-      
-      // Proverava da li igrač ima samo tri figure i postavlja jump mode ako je to slučaj
-      const playerHasThreePieces = pieces.filter(p => p.color === pieceColor).length === 3;
-      setJumpMode(playerHasThreePieces);
+        const newPiece = pieces.find((s) => s.square === square && s.index === index && s.color === pieceColor);
+        setSelectedPiece(newPiece);
     }
-  }
-  
+}
+
   function generateConnectedLines() {
     const lines = [];
 
@@ -444,7 +437,7 @@ export default function Game() {
         const colors = [];
         for (let index = start; index <= end; index++) {
           const piece = pieces.find(
-            (p) => p.square === square && p.index === index % 8
+            (s) => s.square === square && s.index === index % 8
           );
           if (!piece) continue indexLoop;
           colors.push(piece.color);
@@ -452,9 +445,9 @@ export default function Game() {
         if (colors.length !== 3) continue; // mozda ne treba
         let lineColor;
         if (colors.every((c) => c === "white")) {
-          lineColor = "blue";
+          lineColor = "red";
         } else if (colors.every((c) => c === "black")) {
-          lineColor = "orange";
+          lineColor = "green";
         } else {
           continue;
         }
@@ -491,7 +484,7 @@ export default function Game() {
       const colors = [];
       for (let square = 0; square < 3; square++) {
         const piece = pieces.find(
-          (p) => p.square === square && p.index === index
+          (s) => s.square === square && s.index === index
         );
         if (!piece) continue outerLoop;
         colors.push(piece.color);
@@ -500,9 +493,9 @@ export default function Game() {
       if (colors.length !== 3) continue;
       let lineColor;
       if (colors.every((c) => c === "white")) {
-        lineColor = "blue";
+        lineColor = "red";
       } else if (colors.every((c) => c === "black")) {
-        lineColor = "orange";
+        lineColor = "green";
       } else {
         continue;
       }
@@ -569,7 +562,7 @@ export default function Game() {
   function playMove(move) {
     switch (move[0]) {
       case "set": {
-        const {square, index } = fromBackend(move);
+        const { color, square, index } = fromBackend(move);
         onCircleClick(square, index);
         break;
       }
@@ -623,14 +616,14 @@ export default function Game() {
         Array(3)
           .fill(null)
           .map((_) => Array(3).fill(0))
-      ); 
+      ); //matrica puna nula
 
     let white_count = 0;
     let black_count = 0;
     for (const piece of pieces) {
       const { color, square, index } = piece;
       const player = color === "white" ? 1 : -1;
-      const x = square; 
+      const x = square; //kvadrat
       const [y, z] = indexToBackendIndex(index);
 
       matrix[x][y][z] = player;
@@ -674,7 +667,7 @@ export default function Game() {
     }
   }
   function fromBackendCoordinates(move) {
-    const [ player, x, y, z] = move;
+    const [type, player, x, y, z] = move;
     const square = x;
     let index;
     if (y === 0) {
@@ -726,6 +719,9 @@ export default function Game() {
       <div id="game-container">
         <div className="whiteCircle">
           <div className="white"></div>
+          <h3 style={{ textAlign: "center", marginTop: 0 }}>
+            {whiteRemaining}
+          </h3>
         </div>
         <svg viewBox="0 0 100 100">
           <line className="board-line" x1={50} y1={10} x2={50} y2={30} />
@@ -736,22 +732,23 @@ export default function Game() {
           <Board padding={20} onCircleClick={onCircleClick} />
           <Board padding={30} onCircleClick={onCircleClick} />
           {...connectedLines}
-          {pieces.map((piece, idx) => (
-    <Piece
-      key={`piece-${idx}`} // idx is the array index, ensuring a unique key
-      square={piece.square}
-      index={piece.index}
-      color={piece.color}
-      selected={
-        selectedPiece &&
-        selectedPiece.square === piece.square &&
-        selectedPiece.index === piece.index &&
-        selectedPiece.color === piece.color
-      }
-      onPieceClick={onPieceClick}
-    />
-  ))}
-</svg>
+          {pieces.map(({ square, index, color }) => (
+            <Piece
+              key={`${square}-${index}-${color}`}
+              square={square}
+              index={index}
+              color={color}
+              selected={
+                selectedPiece &&
+                selectedPiece.square === square &&
+                selectedPiece.index === index &&
+                selectedPiece.color === color
+              }
+              onPieceClick={onPieceClick}
+            />
+          ))}
+        </svg>
+        
         <div>
           <div className="black"></div>
         </div>
@@ -760,8 +757,7 @@ export default function Game() {
             <div className="piece white"></div>
             <span className="piece-number white">{whiteRemaining}</span>
             <span className="piece-count white">{whitePiecesCount}</span> 
-          </div>
-
+          </div>    
           <div className="counter">
             <div className="piece black"></div>
             <span className="piece-number black">{blackRemaining}</span>

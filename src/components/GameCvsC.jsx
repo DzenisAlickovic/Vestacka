@@ -313,7 +313,7 @@ export default function Game() {
       (color === "white" && whiteRemaining > 0) ||
       (color === "black" && blackRemaining > 0)
     ) {
-      // putting new pieces
+      // Postavljanje novih figura
       setPieces((p) => [...p, { square, index, color }]);
       if (color === "white") {
         setWhiteRemaining(whiteRemaining - 1);
@@ -322,7 +322,7 @@ export default function Game() {
       }
       clicked = true;
     } else {
-      // moving pieces
+      // Pomeranje figura
       if (
         selectedPiece &&
         (jumpMode ||
@@ -348,66 +348,81 @@ export default function Game() {
     }
 
     setClicked(clicked);
-  }
+    updateJumpMode(); 
+}
 
-  function isPieceConnected(piece) {
-    // Provera za svaku liniju koju kamenčić može formirati
-    const possibleLines = [
-      // Horizontalne linije
-      pieces.filter(
-        (p) => p.square === piece.square && Math.abs(p.index - piece.index) <= 2
-      ),
-      // Vertikalne linije
-      pieces.filter(
-        (p) => p.index === piece.index && Math.abs(p.square - piece.square) <= 2
-      ),
+
+function updateJumpMode() {
+  // Provera da li su sve figure postavljene
+  const allPiecesPlaced = whiteRemaining === 0 && blackRemaining === 0;
+
+  if (allPiecesPlaced) {
+    if (color === "white" && whitePiecesCount <= 3) {
+      setJumpMode(true);
+    } else if (color === "black" && blackPiecesCount <= 3) {
+      setJumpMode(true);
+    } else {
+      setJumpMode(false);
+    }
+  } else {
+    // Ako nisu sve figure postavljene, režim skakanja ostaje isključen
+    setJumpMode(false);
+  }
+}
+
+  
+  function isPiecePartOfLine(clickedPiece, pieces) {
+    const { square, index, color } = clickedPiece;
+    const horizontalLineIndices = [
+      [0, 1, 2],
+      [2, 3, 4],
+      [4, 5, 6],
+      [6, 7, 0],
     ];
-
-    // Provera da li neka od linija sadrži tri kamenčića iste boje
-    return possibleLines.some(
-      (line) => line.length === 3 && line.every((p) => p.color === piece.color)
+    const isHorizontalLine = horizontalLineIndices.some(
+      (indices) =>
+        indices.includes(index) &&
+        indices.every((i) =>
+          pieces.some(
+            (p) => p.square === square && p.index === i % 8 && p.color === color
+          )
+        )
     );
+    if (isHorizontalLine) {
+      return true;
+    }
+
+    if (index % 2 === 1) {
+      const isVerticalLine =
+        pieces.filter((p) => p.index === index && p.color === color).length ===
+        3;
+      if (isVerticalLine) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  function onPieceClick(square, index, pieceColor) {
+function onPieceClick(square, index, pieceColor) {
     if (!isGameActive) return;
-    console.log("piece clicked", square, index, pieceColor);
-    const clickedPiece = { square, index, color: pieceColor };
     if (removePieceMode) {
       if (color === pieceColor) return;
-      const pieceIsConnected = isPieceConnected(clickedPiece);
-      const disconnectedPieces = pieces.filter(
-        (p) => p.color !== color && !isPieceConnected(p)
+      const clickedPiece = { square, index, color: pieceColor };
+      const pieceIsInLine = isPiecePartOfLine(clickedPiece, pieces);
+      const otherPiecesNotInLine = pieces.filter(
+        (p) => !isPiecePartOfLine(p, pieces)
       );
 
-      if (pieceIsConnected && disconnectedPieces.length > 0) {
+      if (pieceIsInLine && otherPiecesNotInLine.length > 0) {
         return;
       }
 
       setPieces(
-        pieces.filter((p) => !(p.square === square && p.index === index))
+        pieces.filter((s) => !(s.square === square && s.index === index))
       );
-      //setStones(stones.filter((p) => p !== clickedStone));
 
       setRemovePieceMode(false);
-
-      // 4 because of setStones taking effect only after next render
-      if (
-        whiteRemaining === 0 &&
-        blackRemaining === 0 &&
-        ((color === "white" && blackPiecesCount === 4) ||
-          (color === "black" && whitePiecesCount === 4))
-      ) {
-        setJumpMode(true);
-      }
-
-      if (
-        (color === "white" && blackPiecesCount === 3) ||
-        (color === "black" && whitePiecesCount === 3)
-      ) {
-        // Game Over!
-      }
-
+      updateJumpMode();
       toggleColor();
       return;
     }
@@ -427,12 +442,12 @@ export default function Game() {
       setSelectedPiece(null);
     } else {
       const newPiece = pieces.find(
-        (p) =>
-          p.square === square && p.index === index && p.color === pieceColor
+        (s) =>
+          s.square === square && s.index === index && s.color === pieceColor
       );
       setSelectedPiece(newPiece);
     }
-  }
+}
 
   function generateConnectedLines() {
     const lines = [];
@@ -729,7 +744,7 @@ export default function Game() {
           {...connectedLines}
           {pieces.map((piece, idx) => (
     <Piece
-      key={`piece-${idx}`} // idx is the array index, ensuring a unique key
+      key={`piece-${idx}`} 
       square={piece.square}
       index={piece.index}
       color={piece.color}
@@ -754,7 +769,7 @@ export default function Game() {
             <span className="piece-count white">{whitePiecesCount}</span> 
           </div>
 
-          {/* Counter for black pieces */}
+          
           <div className="counter">
             <div className="piece black"></div>
             <span className="piece-number black">{blackRemaining}</span>
