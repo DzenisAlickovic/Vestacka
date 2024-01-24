@@ -444,9 +444,9 @@ export default function Game() {
         if (colors.length !== 3) continue; // mozda ne treba
         let lineColor;
         if (colors.every((c) => c === "white")) {
-          lineColor = "red";
+          lineColor = "blue";
         } else if (colors.every((c) => c === "black")) {
-          lineColor = "green";
+          lineColor = "orange";
         } else {
           continue;
         }
@@ -492,9 +492,9 @@ export default function Game() {
       if (colors.length !== 3) continue;
       let lineColor;
       if (colors.every((c) => c === "white")) {
-        lineColor = "red";
+        lineColor = "blue";
       } else if (colors.every((c) => c === "black")) {
-        lineColor = "green";
+        lineColor = "orange";
       } else {
         continue;
       }
