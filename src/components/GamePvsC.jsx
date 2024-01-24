@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
-import { SlActionUndo } from "react-icons/sl";
 import axios from "axios";
 import "./Game.css";
 
