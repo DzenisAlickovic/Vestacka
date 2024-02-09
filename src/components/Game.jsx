@@ -567,7 +567,30 @@ export default function Game() {
   }
 
   const connectedLines = useMemo(generateConnectedLines, [pieces]);
-
+  function canPlayerMove(playerColor) {
+    return pieces.some(piece => {
+      if (piece.color !== playerColor) return false;
+      return Object.keys(connections).some(key => {
+        const [pieceSquare, pieceIndex] = key.split('-').map(Number);
+        return piece.square === pieceSquare && piece.index === pieceIndex &&
+          connections[key].some(connection => {
+            const [connSquare, connIndex] = connection.split('-').map(Number);
+            return !pieces.some(p => p.square === connSquare && p.index === connIndex);
+          });
+      });
+    });
+  }
+  
+  // Ovo je useEffect hook koji proverava da li je igra završena
+  useEffect(() => {
+    if (isGameActive && (whiteRemaining === 0 && blackRemaining === 0)) {
+      const canMove = canPlayerMove(color);
+      if (!canMove) {
+        alert(`Game Over! ${color === 'white' ? 'Black' : 'White'} has won!`);
+        setIsGameActive(false);
+      }
+    }
+  }, [pieces, color, isGameActive, whiteRemaining, blackRemaining]);
   return (
     <>
       <div id="game-container">

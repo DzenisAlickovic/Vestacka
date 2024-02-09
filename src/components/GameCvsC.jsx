@@ -237,8 +237,6 @@ export default function Game() {
         (p) => p.square === square && p.index === prevPrevIndex
       );
 
-      // TODO: check what happens if two lines are created
-
       if (
         prev &&
         prevPrev &&
@@ -705,28 +703,67 @@ function onPieceClick(square, index, pieceColor) {
   }
 
   useEffect(() => {
+    let isCancelled = false; // Da sprecimo postavljanje stanja na nekomponentizovani komponent
+  
     async function getAiMove() {
+      if (isCancelled) return; // Prekida izvršavanje ako je komponenta nekomponentizovana
+  
       console.log("sending request");
       const gameData = toBackendRepr();
+  
       try {
-        const response = await axios.post(
-          "http://localhost:8000/game/9_man_moris/",
-          gameData
-        );
+        let apiUrl = "http://localhost:8000/game/9_man_moris/";
+        if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+          apiUrl = "https://ai-nine-mens-morris-backend.vercel.app/game/move/";
+        }
+  
+        const response = await axios.post(apiUrl, gameData);
         const newMove = response.data;
         console.log(newMove.move);
-        playMove(newMove.move);
+  
+        if (!isCancelled) {
+          playMove(newMove.move);
+        }
       } catch (e) {
         console.error(e);
       }
     }
+  
     const intervalId = setInterval(() => {
-      getAiMove();
+      if (!isCancelled) { // Provera dodata da se izbegne pokretanje nakon nekomponentizovanja
+        getAiMove();
+      }
     }, 1500);
-
-    return () => clearInterval(intervalId);
+  
+    return () => {
+      isCancelled = true; // Označava da je komponenta nekomponentizovana
+      clearInterval(intervalId);
+    };
   }, [color, removePieceMode]);
-
+  function canPlayerMove(playerColor) {
+    return pieces.some(piece => {
+      if (piece.color !== playerColor) return false;
+      return Object.keys(connections).some(key => {
+        const [pieceSquare, pieceIndex] = key.split('-').map(Number);
+        return piece.square === pieceSquare && piece.index === pieceIndex &&
+          connections[key].some(connection => {
+            const [connSquare, connIndex] = connection.split('-').map(Number);
+            return !pieces.some(p => p.square === connSquare && p.index === connIndex);
+          });
+      });
+    });
+  }
+  
+  // Ovo je useEffect hook koji proverava da li je igra završena
+  useEffect(() => {
+    if (isGameActive && (whiteRemaining === 0 && blackRemaining === 0)) {
+      const canMove = canPlayerMove(color);
+      if (!canMove) {
+        alert(`Game Over! ${color === 'white' ? 'Black' : 'White'} has won!`);
+        setIsGameActive(false);
+      }
+    }
+  }, [pieces, color, isGameActive, whiteRemaining, blackRemaining]);
   return (
     <>
       <div id="game-container">

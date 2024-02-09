@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useContext } from "react";
+import { useMemo, useState, useEffect,useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { MyContext } from "../context/MyContext";
 import axios from "axios";
@@ -181,7 +181,10 @@ export default function Game() {
   const ButtonClick = () => {
     seeButtonsFunction();
   };
-
+  const playedMoves = useRef([]);
+  const modalRef = useRef(null);
+  const [showModal, setShowModal] = useState(true);
+  const [isAiTurn, setIsAiTurn] = useState(false);
   const [pieces, setPieces] = useState([]);
   const [whiteRemaining, setWhiteRemaining] = useState(9);
   const [blackRemaining, setBlackRemaining] = useState(9);
@@ -196,11 +199,12 @@ export default function Game() {
   const whitePiecesCount = pieces.filter((s) => s.color === "white").length;
   const blackPiecesCount = pieces.filter((s) => s.color === "black").length;
 
+
   function toggleColor() {
     setColor((c) => (c === "white" ? "black" : "white"));
   }
 
-  function checkLine(square, index) {
+  function checkLine(square, index,pieceColor) {
     const nextIndex = (index + 1) % 8;
     if (index % 2 !== 0) {
       const prev = pieces.find(
@@ -209,14 +213,14 @@ export default function Game() {
       const next = pieces.find(
         (s) => s.square === square && s.index === nextIndex
       );
-      if (prev && next && prev.color === color && next.color === color) {
+      if (prev && next && prev.color === pieceColor && next.color === pieceColor) {
         return true;
       }
 
       let newLine = true;
       for (let i = 0; i < 3; i++) {
         const st = pieces.find((s) => s.square === i && s.index === index);
-        if (!st || st.color !== color) {
+        if (!st || st.color !== pieceColor) {
           newLine = false;
           break;
         }
@@ -239,8 +243,8 @@ export default function Game() {
       if (
         prev &&
         prevPrev &&
-        prev.color === color &&
-        prevPrev.color === color
+        prev.color === pieceColor &&
+        prevPrev.color === pieceColor
       ) {
         return true;
       }
@@ -255,8 +259,8 @@ export default function Game() {
       if (
         next &&
         nextNext &&
-        next.color === color &&
-        nextNext.color === color
+        next.color === pieceColor &&
+        nextNext.color === pieceColor
       ) {
         return true;
       }
@@ -284,7 +288,7 @@ export default function Game() {
   ]);
 
   useEffect(() => {
-    if (clicked && checkLine(clickedSquare, clickedIndex)) {
+    if (clicked && checkLine(clickedSquare, clickedIndex,color)) {
       setRemovePieceMode(true);
       setClicked(false);
     } else if (clicked) {
@@ -395,37 +399,40 @@ export default function Game() {
   
   function onPieceClick(square, index, pieceColor) {
     if (!isGameActive) return;
-    
-    if (removePieceMode) {
-        if (color === pieceColor) return;
-        
-        const clickedPiece = { square, index, color: pieceColor };
-        const pieceIsInLine = isPiecePartOfLine(clickedPiece, pieces);
-        const otherPiecesNotInLine = pieces.filter((p) => !isPiecePartOfLine(p, pieces));
-
-        if (pieceIsInLine && otherPiecesNotInLine.length > 0) {
-            return;
-        }
-
-        setPieces(pieces.filter((s) => !(s.square === square && s.index === index)));
+  
+    // Ako je uključen režim uklanjanja figura
+    if (removePieceMode && color !== pieceColor) {
+      const opponentColor = color === "white" ? "black" : "white";
+      const isPartOfLine = checkLine(square, index, opponentColor);
+  
+      // Uzimamo u obzir sve protivničke figure koje nisu deo linije
+      const opponentPiecesNotInLine = pieces.filter(p => p.color === opponentColor && !checkLine(p.square, p.index, p.color));
+  
+      // Uklanjamo figuru samo ako:
+      // 1. Figura nije deo linije, ili
+      // 2. Sve protivničke figure su deo linija (tj. opponentPiecesNotInLine je prazan)
+      if (!isPartOfLine || opponentPiecesNotInLine.length === 0) {
+        setPieces(pieces.filter(p => p.square !== square || p.index !== index));
         setRemovePieceMode(false);
-        updateJumpMode();
         toggleColor();
         return;
+      }
+      // Ako nijedan od uslova za uklanjanje nije ispunjen, prekidamo funkciju
+      return;
     }
-
-    // Ovaj deo koda treba da bude izvan removePieceMode bloka
+  
+    // Ovde nastavljamo sa logikom za odabir i pomeranje sopstvenih figura
     if (color !== pieceColor) return;
-    if ((pieceColor === "white" && whiteRemaining > 0) || (pieceColor === "black" && blackRemaining > 0)) return;
-    
-    if (selectedPiece && selectedPiece.square === square && selectedPiece.index === index && selectedPiece.color === pieceColor) {
-        setSelectedPiece(null);
+    // Ako je figura već odabrana i korisnik klikne na istu figuru, poništavamo odabir
+    if (selectedPiece && selectedPiece.square === square && selectedPiece.index === index) {
+      setSelectedPiece(null);
     } else {
-        const newPiece = pieces.find((s) => s.square === square && s.index === index && s.color === pieceColor);
-        setSelectedPiece(newPiece);
+      // Inače, postavljamo novu odabranu figuru
+      const newSelectedPiece = pieces.find(p => p.square === square && p.index === index && p.color === color);
+      setSelectedPiece(newSelectedPiece);
     }
-}
-
+  }
+  
   function generateConnectedLines() {
     const lines = [];
 
@@ -559,6 +566,10 @@ export default function Game() {
   const [moveToPiece, setMoveToPiece] = useState(null);
 
   function playMove(move) {
+    if (!move || !Array.isArray(move) || move.length === 0) {
+      console.error("Invalid move:", move);
+      return;
+    }
     switch (move[0]) {
       case "set": {
         const { color, square, index } = fromBackend(move);
@@ -687,40 +698,71 @@ export default function Game() {
   }
 
   useEffect(() => {
+    let isCancelled = false; // Da sprecimo postavljanje stanja na nekomponentizovani komponent
+  
     async function getAiMove() {
+      if (color !== "black" || isCancelled) return; // Pokreće AI samo kada je crni na potezu i komponenta nije nekomponentizovana
+  
       console.log("sending request");
       const gameData = toBackendRepr();
+  
       try {
-        if (color == "black") {
-          const response = await axios.post(
-            "http://localhost:8000/game/9_man_moris/",
-            gameData
-          );
-          const newMove = response.data;
-          console.log(newMove.move);
+        let apiUrl = "http://localhost:8000/game/9_man_moris/";
+        if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+          apiUrl = "https://ai-nine-mens-morris-backend.vercel.app/game/move/";
+        }
+  
+        const response = await axios.post(apiUrl, gameData);
+        const newMove = response.data;
+        console.log(newMove.move);
+  
+        if (!isCancelled) {
           playMove(newMove.move);
         }
       } catch (e) {
         console.error(e);
       }
     }
-    const intervalId = setInterval(() => {
-      if(color == "black"){
-        getAiMove();
-      }
-    }, 1500);
-
-    return () => clearInterval(intervalId);
+  
+    if (color === "black") {
+      getAiMove();
+    }
+  
+    return () => {
+      isCancelled = true; // Označava da je komponenta nekomponentizovana
+    };
   }, [color, removePieceMode]);
+  // Ovo je funkcija koja proverava može li igrač da napravi potez.
+function canPlayerMove(playerColor) {
+  return pieces.some(piece => {
+    if (piece.color !== playerColor) return false;
+    return Object.keys(connections).some(key => {
+      const [pieceSquare, pieceIndex] = key.split('-').map(Number);
+      return piece.square === pieceSquare && piece.index === pieceIndex &&
+        connections[key].some(connection => {
+          const [connSquare, connIndex] = connection.split('-').map(Number);
+          return !pieces.some(p => p.square === connSquare && p.index === connIndex);
+        });
+    });
+  });
+}
+
+// Ovo je useEffect hook koji proverava da li je igra završena
+useEffect(() => {
+  if (isGameActive && (whiteRemaining === 0 && blackRemaining === 0)) {
+    const canMove = canPlayerMove(color);
+    if (!canMove) {
+      alert(`Game Over! ${color === 'white' ? 'Black' : 'White'} has won!`);
+      setIsGameActive(false);
+    }
+  }
+}, [pieces, color, isGameActive, whiteRemaining, blackRemaining]);
 
   return (
     <>
       <div id="game-container">
         <div className="whiteCircle">
           <div className="white"></div>
-          <h3 style={{ textAlign: "center", marginTop: 0 }}>
-            {whiteRemaining}
-          </h3>
         </div>
         <svg viewBox="0 0 100 100">
           <line className="board-line" x1={50} y1={10} x2={50} y2={30} />
